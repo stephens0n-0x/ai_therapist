@@ -1,18 +1,13 @@
-import requests, json, settings
+import openai, settings, functools
 
-CHAT_ENDPOINT = "https://api.openai.com/v1/chat/completions"
+# 👇 Add this block before calling OpenAI
+openai.api_type = "azure"
+openai.api_key = settings.AZURE_OPENAI_KEY
+openai.api_base = settings.AZURE_OPENAI_ENDPOINT  # <--- this line is required
+openai.api_version = settings.AZURE_OPENAI_API_VER
 
-HEAD = {
-    "Authorization": f"Bearer {settings.OPENAI_KEY}",
-    "Content-Type": "application/json"
-}
-
-def chat(messages, model="gpt-3.5-turbo"):
-    body = {
-        "model": model,
-        "temperature": 0.7,
-        "messages": messages
-    }
-    r = requests.post(CHAT_ENDPOINT, headers=HEAD, json=body, timeout=30)
-    r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
+_chat = functools.partial(
+    openai.chat.completions.create,
+    engine=settings.AZURE_OPENAI_DEPLOYMENT,
+    temperature=0.7,
+)

@@ -1,5 +1,3 @@
 pygame==2.5.2
-requests>=2.31
-websockets>=12.0        # if you’ll stream responses
-pydub>=0.25.1           # simple WAV→PCM for pygame.mixer
-python-dotenv>=1.0.1    # optional; keeps keys out of Git
+azure-cognitiveservices-speech==1.37.0   # STT & TTS
+openai==1.30.0                            # Azure OpenAI uses this SDK
