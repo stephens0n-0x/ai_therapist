@@ -1,24 +1,23 @@
-import requests, tempfile, pygame, settings, os
-from pydub import AudioSegment
+import tempfile, pygame, settings, azure.cognitiveservices.speech as speechsdk
 
-TTS_URL = f"https://api.elevenlabs.io/v1/text-to-speech/{settings.VOICE_ID}"
+_speech_cfg = speechsdk.SpeechConfig(
+    subscription=settings.AZURE_SPEECH_KEY,
+    region=settings.AZURE_SPEECH_REGION)
+_speech_cfg.speech_synthesis_voice_name = settings.TTS_VOICE
 
-HEAD = {
-    "xi-api-key": settings.ELEVEN_KEY,
-    "Content-Type": "application/json"
-}
-
-def speak(text):
+def speak(text: str):
     if not settings.USE_TTS:
-        return
-    payload = {"text": text, "model_id": "eleven_multilingual_v2"}
-    r = requests.post(TTS_URL, headers=HEAD, json=payload, timeout=30)
-    r.raise_for_status()
+        return None
+    synthesizer = speechsdk.SpeechSynthesizer(
+        speech_config=_speech_cfg, audio_config=None)
+    result = synthesizer.speak_text_async(text).get()
+    if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+        print("TTS error:", result.reason)
+        return None
+
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(r.content)
+        tmp.write(result.audio_data)
         tmp.flush()
-        sound = pygame.mixer.Sound(tmp.name)
-        sound.play()
-        while pygame.mixer.get_busy():
-            pygame.time.wait(50)
-        os.unlink(tmp.name)
+        snd = pygame.mixer.Sound(tmp.name)
+    snd.play()
+    return snd
