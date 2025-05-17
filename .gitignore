@@ -1,5 +1,5 @@
 __pycache__/
-.env
+therapist_venv/
 StreamingAssets/EnvPredictions/today.env.json
 *.wav
 *.mp3
