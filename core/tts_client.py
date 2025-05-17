@@ -1,23 +1,29 @@
-import tempfile, pygame, settings, azure.cognitiveservices.speech as speechsdk
+import tempfile, os, pygame, settings
+import azure.cognitiveservices.speech as speechsdk
+from azure.cognitiveservices.speech import CancellationDetails
 
-_speech_cfg = speechsdk.SpeechConfig(
+_cfg = speechsdk.SpeechConfig(
     subscription=settings.AZURE_SPEECH_KEY,
-    region=settings.AZURE_SPEECH_REGION)
-_speech_cfg.speech_synthesis_voice_name = settings.TTS_VOICE
+    region=settings.AZURE_SPEECH_REGION,
+)
+_cfg.speech_synthesis_voice_name = settings.TTS_VOICE
 
 def speak(text: str):
     if not settings.USE_TTS:
         return None
-    synthesizer = speechsdk.SpeechSynthesizer(
-        speech_config=_speech_cfg, audio_config=None)
-    result = synthesizer.speak_text_async(text).get()
-    if result.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
-        print("TTS error:", result.reason)
+
+    synth = speechsdk.SpeechSynthesizer(_cfg, None)
+    res = synth.speak_text_async(text).get()
+
+    if res.reason != speechsdk.ResultReason.SynthesizingAudioCompleted:
+        print("TTS error →", res.reason, CancellationDetails.from_result(res).error_details)
         return None
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(result.audio_data)
-        tmp.flush()
-        snd = pygame.mixer.Sound(tmp.name)
+        tmp.write(res.audio_data)
+        tmp_path = tmp.name
+
+    snd = pygame.mixer.Sound(tmp_path)
     snd.play()
+    os.unlink(tmp_path)  # cleanup temp file
     return snd
